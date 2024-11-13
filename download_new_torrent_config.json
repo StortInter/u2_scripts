@@ -1,0 +1,25 @@
+{
+    "cookies": {
+        "nexusphp_u2": ""
+    },
+    "passkey": "",
+    "save_path": "",
+    "proxies": {
+        "http": "",
+        "https": ""
+    },
+    "headers": {
+        "authority": "u2.dmhy.org",
+        "accept-encoding": "gzip, deflate",
+        "accept-language": "zh-CN,zh;q=0.8",
+        "referer": "https://u2.dmhy.org/index.php",
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0"
+    },
+    "interval": 600,
+    "mgdb": false,
+    "download_sticky": true,
+    "download_no_seeder_sticky": true,
+    "download_no_free_sticky": false,
+    "download_no_free_non_sticky": false,
+    "eval_all_keys": false
+}

@@ -1,6 +1,9 @@
+# -*- coding: utf-8 -*-
+
 # python 版本 3.6 及以上，依赖: pip3 install requests bs4 lxml loguru pymongo
 # 自己用了一下还可行，虽然我是直接加到 deluge...
 
+import json
 import os
 import re
 from collections import deque
@@ -18,31 +21,47 @@ from my_bencoder import bdecode
 # from base64 import b64encode
 # from deluge_client import LocalDelugeRPCClient
 
-# *************************必填配置************************
-cookies = {'nexusphp_u2': ''}
-passkey = ''
-save_path = '/de/wt'  # 存放种子文件的文件夹，可以用 bt 客户端监控
-download_location = '/de/dl'  # 存放下载内容的文件夹
+# # *************************必填配置************************
+# cookies = {'nexusphp_u2': ''}
+# passkey = ''
+# save_path = '/de/wt'  # 存放种子文件的文件夹，可以用 bt 客户端监控
+# download_location = '/de/dl'  # 存放下载内容的文件夹
+#
+# # ************************可修改配置***********************
+# proxies = {  # 代理
+#     # 'http': 'http://127.0.0.1:10809', 'https': 'http://127.0.0.1:10809'
+# }
+# headers = {
+#     'authority': 'u2.dmhy.org',
+#     'accept-encoding': 'gzip, deflate',
+#     'accept-language': 'zh-CN,zh;q=0.8',
+#     'referer': 'https://u2.dmhy.org/index.php',
+#     'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
+#                   'Chrome/98.0.4758.102 Safari/537.36 Edg/98.0.1108.62'
+# }
+# interval = 300  # 爬网页的间隔
+# mgdb = False  # 将种子数据保存到 mongodb，需要安装 mongodb 数据库
+# download_sticky = True  # 是否下载顶置
+# download_no_seeder_sticky = True  # 是否下载无人做种的顶置，为 True 时还是不会下载平均进度为 0 的种子
+# download_no_free_sticky = True  # 是否下载不是 free 的顶置种子
+# download_no_free_non_sticky = False  # 是否下载不是 free 的非顶置种子
+# eval_all_keys = False  # 获取种子所有信息，不开的话用到哪个就获取哪个
 
-# ************************可修改配置***********************
-proxies = {  # 代理
-    # 'http': 'http://127.0.0.1:10809', 'https': 'http://127.0.0.1:10809'
-}
-headers = {
-    'authority': 'u2.dmhy.org',
-    'accept-encoding': 'gzip, deflate',
-    'accept-language': 'zh-CN,zh;q=0.8',
-    'referer': 'https://u2.dmhy.org/index.php',
-    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
-                  'Chrome/98.0.4758.102 Safari/537.36 Edg/98.0.1108.62'
-}
-interval = 300  # 爬网页的间隔
-mgdb = False  # 将种子数据保存到 mongodb，需要安装 mongodb 数据库
-download_sticky = True  # 是否下载顶置
-download_no_seeder_sticky = True  # 是否下载无人做种的顶置，为 True 时还是不会下载平均进度为 0 的种子
-download_no_free_sticky = True  # 是否下载不是 free 的顶置种子
-download_no_free_non_sticky = False  # 是否下载不是 free 的非顶置种子
-eval_all_keys = False  # 获取种子所有信息，不开的话用到哪个就获取哪个
+# load config from json file
+with open('./download_new_torrent_config.json', 'r') as f:
+    config = json.load(f)
+    cookies = config['cookies']
+    passkey = config['passkey']
+    save_path = config['save_path']
+    proxies = config['proxies']
+    headers = config['headers']
+    interval = config['interval']
+    mgdb = config['mgdb']
+    download_sticky = config['download_sticky']
+    download_no_seeder_sticky = config['download_no_seeder_sticky']
+    download_no_free_sticky = config['download_no_free_sticky']
+    download_no_free_non_sticky = config['download_no_free_non_sticky']
+    eval_all_keys = config['eval_all_keys']
 
 # *************************日志设置************************
 log_path = f'{os.path.splitext(__file__)[0]}.log'
