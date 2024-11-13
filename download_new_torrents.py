@@ -47,7 +47,7 @@ from requests import get
 # eval_all_keys = False  # 获取种子所有信息，不开的话用到哪个就获取哪个
 
 # load config from json file
-with open('./download_new_torrent_config.json', 'r') as f:
+with open('./download_new_torrents_config.json', 'r') as f:
     config = json.load(f)
     cookies = config['cookies']
     passkey = config['passkey']
