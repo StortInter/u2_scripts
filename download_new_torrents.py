@@ -16,8 +16,7 @@ from bs4 import BeautifulSoup
 from loguru import logger
 from requests import get
 
-from my_bencoder import bdecode
-
+# from my_bencoder import bdecode
 # from base64 import b64encode
 # from deluge_client import LocalDelugeRPCClient
 
@@ -359,13 +358,13 @@ class U2Web:
                             with open(sv, 'wb') as to:
                                 to.write(content)
                             logger.info(f'add torrent {self.tid}')
-                        else:
+                        # else:
                             # down_loc = download_location
-                            name = ''
-                            try:
-                                name = bdecode(content)[b'info'][b'name'].decode()
-                            except:
-                                pass
+                            # name = ''
+                            # try:
+                            #     name = bdecode(content)[b'info'][b'name'].decode()
+                            # except:
+                            #     pass
                             # if client.host in ('127.0.0.1', 'localhost'):
                             #     if not name or name in os.listdir(down_loc):
                             #         i = 0
@@ -386,7 +385,7 @@ class U2Web:
                             #     b64encode(content),
                             #     {'add_paused': False, 'download_location': down_loc}
                             # )
-                            logger.info(f'Add torrent {self.tid} via DelugeClient')
+                            # logger.info(f'Add torrent {self.tid} via DelugeClient')
 
                         added.append(self.tid)
                         write_list('added')
@@ -405,6 +404,7 @@ class U2Web:
             finally:
                 sleep(interval)
 
+    @staticmethod
     def value(func):
         @property
         @wraps(func)
