@@ -4,19 +4,19 @@
 import os
 import re
 from collections import deque
-
-import pytz
-
 from datetime import datetime as dt
 from functools import wraps
 from time import sleep, time
+
+import pytz
 from bs4 import BeautifulSoup
 from loguru import logger
 from requests import get
-from base64 import b64encode
-from deluge_client import LocalDelugeRPCClient
 
 from my_bencoder import bdecode
+
+# from base64 import b64encode
+# from deluge_client import LocalDelugeRPCClient
 
 # *************************必填配置************************
 cookies = {'nexusphp_u2': ''}
@@ -55,17 +55,18 @@ checked = deque([], maxlen=300)
 如果去获取只有详细页才有的信息，比如 info_hash 值，会返回 None'''
 added = deque([], maxlen=300)
 '''如果某个种子的 id 在 added 里，那么筛选种子的时候会跳过'''
-add_client = True
+add_client = False
 '''True 即直接添加到客户端，只支持 deluge, qb 懒得写了
 如果默认下载目录下有同名文件，则新建一个目录下载，主要是防止 rev 的种子超速
 False 则将种子下载到监控文件夹'''
-client = LocalDelugeRPCClient(
-    '127.0.0.1',  # IP
-    58846,  # daemon port
-    'localclient',  # username
-    ''  # password, cat ~/.config/deluge/auth
-)
+# client = LocalDelugeRPCClient(
+#     '127.0.0.1',  # IP
+#     58846,  # daemon port
+#     'localclient',  # username
+#     ''  # password, cat ~/.config/deluge/auth
+# )
 'add_client 为真时需要填写'
+
 
 # *************************END****************************
 
@@ -107,13 +108,13 @@ def call_retry(_client, method, *args, **kwargs):
 
 
 detail_key_dict = {
-        'filename': ['下载', '下載', 'Download', 'Скачивание'],
-        'author': ['发布人', '發佈人', '發布人', 'Uploader', 'Загрузил'],
-        'hash': ['种子信息', '種子訊息', 'Torrent Info', 'Информация о торренте'],
-        'description': ['描述', '描述', 'Description', 'Описание'],
-        'progress': ['活力度', 'Health', 'Целостность'],
-        'geoips': ['同伴', 'Peers', 'Всего Участников']
-    }
+    'filename': ['下载', '下載', 'Download', 'Скачивание'],
+    'author': ['发布人', '發佈人', '發布人', 'Uploader', 'Загрузил'],
+    'hash': ['种子信息', '種子訊息', 'Torrent Info', 'Информация о торренте'],
+    'description': ['描述', '描述', 'Description', 'Описание'],
+    'progress': ['活力度', 'Health', 'Целостность'],
+    'geoips': ['同伴', 'Peers', 'Всего Участников']
+}
 
 
 class U2Web:
@@ -283,10 +284,11 @@ class U2Web:
     @property
     def gbs(self):  # 种子体积(gb)，不是 property
         [num, unit] = self.size.split(' ')
-        _pow = ['MiB', 'GiB', 'TiB', '喵', '寄', '烫', 'MiБ', 'GiБ', 'TiБ', 'egamay', 'igagay', 'eratay'].index(unit) % 3
+        _pow = ['MiB', 'GiB', 'TiB', '喵', '寄', '烫', 'MiБ', 'GiБ', 'TiБ', 'egamay', 'igagay', 'eratay'].index(
+            unit) % 3
         return float(num.replace(',', '.')) * 1024 ** (_pow - 1)
 
-    def select_torrent(self):
+    def origin_select_torrent(self):
         """
         选择种子，符合条件返回 True。有些值可能为空
         规则自己写吧，反正应该很好懂，看这个逻辑也不是很方便能用配置描述....
@@ -295,28 +297,40 @@ class U2Web:
             if self.sticky:  # 顶置种子
                 if download_sticky:
                     if not download_no_free_sticky and self.promotion[1] > 0:
-                        return
+                        return False
                     if self.seeder_num > 0:  # 做种数大于 0 ，直接下载
                         return True
                     if download_no_seeder_sticky:
-                        return
+                        return False
                     if self.leecher_num > 5:
                         if self.progress is not None and self.progress > 0:
                             # 做种数小于于 0 ，检查下载者进度，如果平均进度全为 0 不下载
                             return True
             else:
                 if not download_no_free_non_sticky and self.promotion[1] > 0:
-                    return
+                    return False
                 if self.secs < 2 * interval:  # 发布不久，直接下载
                     return True
                 if self.seeder_num < 10 or self.leecher_num > 20:  # 根据做种数和下载数判断是否要下载
                     if self.progress is not None and self.progress < 30:  # 检查平均进度
                         return True
 
+    def select_torrent(self):
+        print(f'Checking: [{self.tid}]\tSize: {self.gbs} GiB\tPromotion: {self.promotion[1]}\n', end='')
+        if self.gbs > 16:
+            return False
+        elif self.gbs < 1:
+            return True
+        elif self.gbs < 2:
+            if self.secs < interval:
+                return True
+        return self.origin_select_torrent()
+
     def rss(self):
         while True:
             try:
                 for self.tr in self.torrent_page():
+                    sleep(10)
                     if self.select_torrent():
                         sv = f'{save_path}/[U2].{self.tid}.torrent'
                         link = f'https://u2.dmhy.org/download.php?id={self.tid}&passkey={self.passkey}&https=1'
@@ -327,32 +341,32 @@ class U2Web:
                                 to.write(content)
                             logger.info(f'add torrent {self.tid}')
                         else:
-                            down_loc = download_location
+                            # down_loc = download_location
                             name = ''
                             try:
                                 name = bdecode(content)[b'info'][b'name'].decode()
                             except:
                                 pass
-                            if client.host in ('127.0.0.1', 'localhost'):
-                                if not name or name in os.listdir(down_loc):
-                                    i = 0
-                                    while True:
-                                        new_loc = f'{download_location}/.{i}'
-                                        if not os.path.exists(new_loc):
-                                            os.mkdir(new_loc)
-                                            down_loc = new_loc
-                                            break
-                                        if name and name not in os.listdir(new_loc):
-                                            down_loc = new_loc
-                                            break
-                                        i += 1
-                            call_retry(
-                                client,
-                                'core.add_torrent_file',
-                                f'[U2].{self.tid}.torrent',
-                                b64encode(content),
-                                {'add_paused': False, 'download_location': down_loc}
-                            )
+                            # if client.host in ('127.0.0.1', 'localhost'):
+                            #     if not name or name in os.listdir(down_loc):
+                            #         i = 0
+                            #         while True:
+                            #             new_loc = f'{download_location}/.{i}'
+                            #             if not os.path.exists(new_loc):
+                            #                 os.mkdir(new_loc)
+                            #                 down_loc = new_loc
+                            #                 break
+                            #             if name and name not in os.listdir(new_loc):
+                            #                 down_loc = new_loc
+                            #                 break
+                            #             i += 1
+                            # call_retry(
+                            #     client,
+                            #     'core.add_torrent_file',
+                            #     f'[U2].{self.tid}.torrent',
+                            #     b64encode(content),
+                            #     {'add_paused': False, 'download_location': down_loc}
+                            # )
                             logger.info(f'Add torrent {self.tid} via DelugeClient')
 
                         added.append(self.tid)
@@ -393,6 +407,7 @@ class U2Web:
                 else:
                     self.info[name] = func(self)
             return self.info.get(name)
+
         return wrapper
 
     for name in list(vars()):
@@ -407,6 +422,7 @@ class U2Web:
 if __name__ == '__main__':
     if mgdb:
         import pymongo
+
         dbclient = pymongo.MongoClient('mongodb://localhost:27017/')
         base = dbclient['U2']
         col = base['torrent_info']
