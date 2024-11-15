@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
-import requests
 import json
 import os
+
+import requests
 
 
 def make_post(url: str, data: str):

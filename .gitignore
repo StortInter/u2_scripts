@@ -128,3 +128,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+*.bak
+u2_personal_info.json
+download_new_torrents_config.json
