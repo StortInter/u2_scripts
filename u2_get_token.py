@@ -6,34 +6,23 @@ import os
 import requests
 
 
-def make_post(url: str, data: str):
+def request_post(url: str, data: str):
     response = requests.post(url=url, headers={'Content-Type': 'application/json'}, data=data)
-    if response.status_code == 200:
-        return json.loads(response.text)
-    else:
-        return None
+    return json.loads(response.text) if response.status_code == 200 else None
 
 
 def get_authorization_key(uid: str):
     url = 'https://u2.kysdm.com/api/v1/token'
     post_info = {'uid': uid}
-    response_dict = make_post(url=url, data=json.dumps(post_info))
-    if response_dict is not None:
-        if response_dict['msg'] == 'success':
-            return response_dict['data']['key']
-    return None
+    response_dict = request_post(url=url, data=json.dumps(post_info))
+    return response_dict['data']['key'] if response_dict is not None else None
 
 
 def get_token(uid: str, key: str):
     url = 'https://u2.kysdm.com/api/v1/token'
     post_info = {'uid': uid, 'key': key}
-    response_dict = make_post(url=url, data=json.dumps(post_info))
-    if response_dict is not None:
-        if response_dict['msg'] == 'success':
-            return response_dict['data']['token']
-        else:
-            print(response_dict['msg'])
-    return None
+    response_dict = request_post(url=url, data=json.dumps(post_info))
+    return response_dict['data']['token'] if response_dict is not None else None
 
 
 if __name__ == '__main__':
